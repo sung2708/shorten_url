@@ -11,7 +11,8 @@ func main() {
 
 	db := database.InitPostgres(cfg.PostgresDSN)
 	//rdb := database.InitRedis(cfg.RedisHost)
-	r := router.Router(db)
+
+	r := router.Setup(cfg, db)
 	err := r.Run(":" + cfg.PORT)
 	if err != nil {
 		return

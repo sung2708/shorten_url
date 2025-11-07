@@ -8,11 +8,6 @@ import (
 	"github.com/sung2708/shorten_url/internal/repository"
 )
 
-type UrlService interface {
-	Shorten(url string) (*model.URL, error)
-	GetById(id string) (*model.URL, error)
-}
-
 type UrlServiceImpl struct {
 	repo *repository.URLRepository
 }
@@ -21,7 +16,7 @@ func NewUrlService(repo *repository.URLRepository) *UrlServiceImpl {
 	return &UrlServiceImpl{repo: repo}
 }
 
-func (u *UrlServiceImpl) Shorten(url string) (*model.URL, error) {
+func (u *UrlServiceImpl) Shorten(url string, userID *uint) (*model.URL, error) {
 	h1 := sha1.New()
 	h1.Write([]byte(url))
 	code := hex.EncodeToString(h1.Sum(nil))[:6]
@@ -29,6 +24,7 @@ func (u *UrlServiceImpl) Shorten(url string) (*model.URL, error) {
 	newURL := &model.URL{
 		LongURl:   url,
 		ShortCode: code,
+		UserID:    userID,
 	}
 	if err := u.repo.Save(newURL); err != nil {
 		return nil, err

@@ -7,41 +7,43 @@ import (
 	"github.com/sung2708/shorten_url/internal/service"
 )
 
-type URLHandle interface {
-	Shorten(url string) (string, error)
-	Resolve(url string) (string, error)
-}
-
 type URLHandleImpl struct {
-	service *service.UrlServiceImpl
+	urlService service.UrlService
 }
-
 type NewURLRequest struct {
 	URL string `json:"url"`
 }
 
-func NewURLHandler(service *service.UrlServiceImpl) *URLHandleImpl {
-	return &URLHandleImpl{service: service}
+func NewURLHandler(service service.UrlService) *URLHandleImpl {
+	return &URLHandleImpl{urlService: service}
 }
 
-func (h *URLHandleImpl) Shorten(ctx *gin.Context) {
+func (handler *URLHandleImpl) Shorten(ctx *gin.Context) {
 	var req NewURLRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	url, err := h.service.Shorten(req.URL)
+
+	var userID *uint = nil
+
+	useridval, exists := ctx.Get("user_id")
+
+	if exists {
+		uid := useridval.(uint)
+		userID = &uid
+	}
+	url, err := handler.urlService.Shorten(req.URL, userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"url": ctx.Request.Host + "/" + url.ShortCode,
-	})
+	ctx.JSON(http.StatusOK, gin.H{"url": url})
 }
 
-func (h *URLHandleImpl) Resolve(ctx *gin.Context) {
+func (handler *URLHandleImpl) Resolve(ctx *gin.Context) {
 	code := ctx.Param("code")
-	url, err := h.service.GetById(code)
+	url, err := handler.urlService.GetById(code)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

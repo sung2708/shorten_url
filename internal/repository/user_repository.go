@@ -24,7 +24,7 @@ func (ur *UserRepository) Delete(u *model.User) error {
 	return ur.db.Delete(u).Error
 }
 
-func (ur *UserRepository) FindById(id uint) (*model.User, error) {
+func (ur *UserRepository) FindByEmail(email string) (*model.User, error) {
 	var u model.User
-	return &u, ur.db.Where("id = ?", id).First(&u).Error
+	return &u, ur.db.Where("email = ?", email).First(&u).Error
 }
