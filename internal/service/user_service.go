@@ -12,11 +12,11 @@ import (
 )
 
 type UserServiceImpl struct {
-	repo      *repository.UserRepository
+	repo      repository.UserRepository
 	jwtSecret string
 }
 
-func NewUserService(repo *repository.UserRepository, jwtSecret string) *UserServiceImpl {
+func NewUserService(repo repository.UserRepository, jwtSecret string) *UserServiceImpl {
 	return &UserServiceImpl{repo: repo, jwtSecret: jwtSecret}
 }
 

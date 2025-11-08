@@ -3,16 +3,17 @@ package service
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 
 	"github.com/sung2708/shorten_url/internal/model"
 	"github.com/sung2708/shorten_url/internal/repository"
 )
 
 type UrlServiceImpl struct {
-	repo *repository.URLRepository
+	repo repository.UrlRepository
 }
 
-func NewUrlService(repo *repository.URLRepository) *UrlServiceImpl {
+func NewUrlService(repo repository.UrlRepository) *UrlServiceImpl {
 	return &UrlServiceImpl{repo: repo}
 }
 
@@ -22,14 +23,15 @@ func (u *UrlServiceImpl) Shorten(url string, userID *uint) (*model.URL, error) {
 	code := hex.EncodeToString(h1.Sum(nil))[:6]
 
 	newURL := &model.URL{
-		LongURl:   url,
+		LongURL:   url,
 		ShortCode: code,
 		UserID:    userID,
 	}
-	if err := u.repo.Save(newURL); err != nil {
+	createURL, err := u.repo.Save(newURL)
+	if err != nil {
 		return nil, err
 	}
-	return newURL, nil
+	return createURL, nil
 }
 
 func (u *UrlServiceImpl) GetById(code string) (*model.URL, error) {
@@ -38,4 +40,19 @@ func (u *UrlServiceImpl) GetById(code string) (*model.URL, error) {
 		return nil, err
 	}
 	return url, nil
+}
+
+func (u *UrlServiceImpl) FindByUserID(userID uint) ([]*model.URL, error) {
+	return u.repo.FindByUserID(userID)
+}
+
+func (u *UrlServiceImpl) DeleteLink(code string, userID uint) error {
+	url, err := u.repo.Find(code)
+	if err != nil {
+		return errors.New("url not found")
+	}
+	if url.UserID == nil || *url.UserID != userID {
+		return errors.New("user is not own link")
+	}
+	return u.repo.Delete(code)
 }

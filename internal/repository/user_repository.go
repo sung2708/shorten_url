@@ -5,26 +5,31 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository struct {
+type UserRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &UserRepositoryImpl{db: db}
 }
-func (ur *UserRepository) Save(u *model.User) error {
+
+func (ur *UserRepositoryImpl) Save(u *model.User) error {
 	return ur.db.Create(u).Error
 }
 
-func (ur *UserRepository) Update(u *model.User) error {
+func (ur *UserRepositoryImpl) Update(u *model.User) error {
 	return ur.db.Save(u).Error
 }
 
-func (ur *UserRepository) Delete(u *model.User) error {
+func (ur *UserRepositoryImpl) Delete(u *model.User) error {
 	return ur.db.Delete(u).Error
 }
 
-func (ur *UserRepository) FindByEmail(email string) (*model.User, error) {
+func (ur *UserRepositoryImpl) FindByEmail(email string) (*model.User, error) {
 	var u model.User
-	return &u, ur.db.Where("email = ?", email).First(&u).Error
+	err := ur.db.Where("email = ?", email).First(&u).Error
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
 }

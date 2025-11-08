@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 
 	"github.com/sung2708/shorten_url/internal/config"
@@ -11,7 +12,7 @@ import (
 	"github.com/sung2708/shorten_url/internal/service"
 )
 
-func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
+func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 
 	r := gin.Default()
 
@@ -21,7 +22,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	userHandler := handle.NewUserHandler(userService)
 
-	urlRepo := repository.NewURLRepository(db)
+	urlRepo := repository.NewURLRepository(db, rdb)
 
 	urlService := service.NewUrlService(urlRepo)
 	urlHandler := handle.NewURLHandler(urlService)
@@ -38,10 +39,10 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	}
 
 	privateRoutes := r.Group("/api/v1/links")
-	privateRoutes.Use(middleware.AuthMiddleware(cfg.JWTSecret)) // <-- Dùng Middleware
+	privateRoutes.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
-		// privateRoutes.GET("/", urlHandler.GetMyLinks)
-		// privateRoutes.DELETE("/:id", urlHandler.DeleteLink)
+		privateRoutes.GET("/", urlHandler.GetMyLinks)
+		privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
 	}
 	r.GET("/:code", urlHandler.Resolve)
 

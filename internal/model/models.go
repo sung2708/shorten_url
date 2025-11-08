@@ -11,7 +11,7 @@ type User struct {
 
 type URL struct {
 	gorm.Model
-	LongURl    string `gorm:"not null"`
+	LongURL    string `gorm:"not null"`
 	ShortCode  string `gorm:"uniqueIndex;not null"`
 	UserID     *uint
 	User       User `gorm:"foreignKey:UserID;AssociationForeignKey:ID;References:User"`

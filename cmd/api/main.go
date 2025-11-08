@@ -10,9 +10,9 @@ func main() {
 	cfg := config.NewConfigFromEnv()
 
 	db := database.InitPostgres(cfg.PostgresDSN)
-	//rdb := database.InitRedis(cfg.RedisHost)
+	rdb := database.InitRedis(cfg.RedisHost, cfg.RedisUser, cfg.RedisPass)
 
-	r := router.Setup(cfg, db)
+	r := router.Setup(cfg, db, rdb)
 	err := r.Run(":" + cfg.PORT)
 	if err != nil {
 		return

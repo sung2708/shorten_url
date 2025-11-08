@@ -12,6 +12,8 @@ type Config struct {
 	PORT        string
 	JWTSecret   string
 	RedisHost   string
+	RedisUser   string
+	RedisPass   string
 }
 
 func NewConfig(key string, fallback string) string {
@@ -36,5 +38,7 @@ func NewConfigFromEnv() *Config {
 		PORT:        NewConfig("PORT", "8080"),
 		JWTSecret:   NewConfig("JWT_SECRET", ""),
 		RedisHost:   NewConfig("REDIS_HOST", "localhost"),
+		RedisUser:   NewConfig("REDIS_USER", ""),
+		RedisPass:   NewConfig("REDIS_PASSWORD", ""),
 	}
 }

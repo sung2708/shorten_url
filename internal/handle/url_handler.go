@@ -48,5 +48,38 @@ func (handler *URLHandleImpl) Resolve(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.Redirect(http.StatusFound, url.LongURl)
+	ctx.Redirect(http.StatusFound, url.LongURL)
+}
+
+func (handler *URLHandleImpl) GetMyLinks(ctx *gin.Context) {
+	useridValue, _ := ctx.Get("userID")
+	userID := useridValue.(uint)
+
+	links, err := handler.urlService.FindByUserID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+	ctx.JSON(http.StatusOK, gin.H{"links": links})
+}
+
+func (handler *URLHandleImpl) DeleteLink(ctx *gin.Context) {
+
+	useridValue, _ := ctx.Get("userID")
+	userID := useridValue.(uint)
+
+	shortCode := ctx.Param("code")
+
+	err := handler.urlService.DeleteLink(shortCode, userID)
+
+	if err != nil {
+		if err.Error() == "user is not own link" {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		} else if err.Error() == "url not found" {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+	ctx.Status(http.StatusNoContent)
 }
