@@ -14,6 +14,6 @@ type URL struct {
 	LongURL    string `gorm:"not null"`
 	ShortCode  string `gorm:"uniqueIndex;not null"`
 	UserID     *uint
-	User       User `gorm:"foreignKey:UserID;AssociationForeignKey:ID;References:User"`
+	User       User `gorm:"foreignKey:UserID"`
 	ClickCount int  `gorm:"default:0"`
 }

@@ -38,7 +38,7 @@ func (handler *URLHandleImpl) Shorten(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"url": url})
+	ctx.JSON(http.StatusOK, gin.H{"url": ctx.Request.Host + "/" + url.ShortCode})
 }
 
 func (handler *URLHandleImpl) Resolve(ctx *gin.Context) {
