@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
+	"strings"
 
 	"github.com/sung2708/shorten_url/internal/model"
 	"github.com/sung2708/shorten_url/internal/repository"
@@ -21,6 +22,10 @@ func (u *UrlServiceImpl) Shorten(url string, userID *uint) (*model.URL, error) {
 	h1 := sha1.New()
 	h1.Write([]byte(url))
 	code := hex.EncodeToString(h1.Sum(nil))[:6]
+	normalizedURL := url
+	if !strings.HasPrefix(normalizedURL, "http://") && !strings.HasPrefix(normalizedURL, "https://") {
+		normalizedURL = "https://" + normalizedURL
+	}
 
 	newURL := &model.URL{
 		LongURL:   url,
