@@ -2,6 +2,7 @@ package handle
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sung2708/shorten_url/internal/service"
@@ -38,7 +39,8 @@ func (handler *URLHandleImpl) Shorten(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"url": ctx.Request.Host + "/" + url.ShortCode})
+	host := strings.TrimPrefix(ctx.Request.Host, "www.")
+	ctx.JSON(http.StatusOK, gin.H{"url": host + "/" + url.ShortCode})
 }
 
 func (handler *URLHandleImpl) Resolve(ctx *gin.Context) {

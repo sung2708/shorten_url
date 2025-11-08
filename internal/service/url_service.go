@@ -28,7 +28,7 @@ func (u *UrlServiceImpl) Shorten(url string, userID *uint) (*model.URL, error) {
 	}
 
 	newURL := &model.URL{
-		LongURL:   url,
+		LongURL:   normalizedURL,
 		ShortCode: code,
 		UserID:    userID,
 	}
