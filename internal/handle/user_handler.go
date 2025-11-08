@@ -25,10 +25,12 @@ func (handler *UserHandler) Register(ctx *gin.Context) {
 	}
 	if len(input.Password) < 8 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "password is too short"})
+		return
 	}
 	createUser, err := handler.userService.Register(input)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": createUser})
 }
