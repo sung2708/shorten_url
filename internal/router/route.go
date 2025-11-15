@@ -70,8 +70,8 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 		}
 
 		// URL routes
-		apiGroup.POST("/api/v1/shorten", urlHandler.Shorten) /
-			privateRoutes := apiGroup.Group("/api/v1/links")
+		apiGroup.POST("/api/v1/shorten", urlHandler.Shorten)
+		privateRoutes := apiGroup.Group("/api/v1/links")
 		privateRoutes.Use(RequiredAuthMiddleware())
 		{
 			privateRoutes.GET("/", urlHandler.GetMyLinks)
