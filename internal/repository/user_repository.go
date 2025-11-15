@@ -13,21 +13,30 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &UserRepositoryImpl{db: db}
 }
 
-func (ur *UserRepositoryImpl) Save(u *model.User) error {
-	return ur.db.Create(u).Error
+func (r *UserRepositoryImpl) Save(u *model.User) error {
+	return r.db.Create(u).Error
 }
 
-func (ur *UserRepositoryImpl) Update(u *model.User) error {
-	return ur.db.Save(u).Error
+func (r *UserRepositoryImpl) Update(u *model.User) error {
+	return r.db.Save(u).Error
 }
 
-func (ur *UserRepositoryImpl) Delete(u *model.User) error {
-	return ur.db.Delete(u).Error
+func (r *UserRepositoryImpl) Delete(u *model.User) error {
+	return r.db.Delete(u).Error
 }
 
-func (ur *UserRepositoryImpl) FindByEmail(email string) (*model.User, error) {
+func (r *UserRepositoryImpl) FindByEmail(email string) (*model.User, error) {
 	var u model.User
-	err := ur.db.Where("email = ?", email).First(&u).Error
+	err := r.db.Where("email = ?", email).First(&u).Error
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (r *UserRepositoryImpl) FindByID(id uint) (*model.User, error) {
+	var u model.User
+	err := r.db.First(&u, id).Error
 	if err != nil {
 		return nil, err
 	}

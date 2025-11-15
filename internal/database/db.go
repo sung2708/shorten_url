@@ -13,10 +13,12 @@ func InitPostgres(dsn string) *gorm.DB {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = db.AutoMigrate(&model.User{}, &model.URL{})
+
+	err = db.AutoMigrate(&model.User{}, &model.URL{}, &model.OTP{})
 	if err != nil {
-		log.Fatal("Failed to auto migrate users")
+		log.Fatal("Failed to auto migrate users, urls, or email verification tokens:", err)
 	}
-	log.Println("Successfully migrated users")
+
+	log.Println("Successfully migrated users, urls, and email verification tokens")
 	return db
 }

@@ -51,6 +51,31 @@ func (u *UrlServiceImpl) FindByUserID(userID uint) ([]*model.URL, error) {
 	return u.repo.FindByUserID(userID)
 }
 
+//func (u *UrlServiceImpl) UpdateLink(oldCode string, newURL *string, newCode *string, userID uint) (*model.URL, error) {
+//	oldLink, err := u.repo.Find(oldCode)
+
+//	if err != nil {
+//		return nil, errors.New("URL not found")
+//	}
+
+//	if oldLink.User != nil || *oldLink.UserID != userID {
+//		return nil, errors.New("you don't have permission")
+//	}
+//	if newCode != nil && *newCode != oldCode {
+//		_, err := u.repo.Find(*newCode)
+//		if err != nil {
+//			return nil, errors.New("URL is using")
+//		}
+//	}
+//	if newURL != nil {
+//		normalizedURL := *newURL
+//		if !strings.HasPrefix(normalizedURL, "http://") && !strings.HasPrefix(normalizedURL, "https://") {
+//			normalizedURL = "https://" + normalizedURL
+//		}
+//	}
+//	return u.repo.Update(oldCode, newURL, newCode)
+//}
+
 func (u *UrlServiceImpl) DeleteLink(code string, userID uint) error {
 	url, err := u.repo.Find(code)
 	if err != nil {

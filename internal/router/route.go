@@ -1,36 +1,68 @@
 package router
 
 import (
+	"net/http"
+	"time"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
-
 	"github.com/sung2708/shorten_url/internal/config"
 	"github.com/sung2708/shorten_url/internal/handle"
 	"github.com/sung2708/shorten_url/internal/middleware"
 	"github.com/sung2708/shorten_url/internal/repository"
 	"github.com/sung2708/shorten_url/internal/service"
+	"gorm.io/gorm"
 )
+
+func RequiredAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		useridValue, _ := c.Get("user_id")
+		if useridValue == nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Login must require"})
+			return
+		}
+		c.Next()
+	}
+}
 
 func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 
 	r := gin.Default()
+	r.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"POST", "GET", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	userRepo := repository.NewUserRepository(db)
+	otpRepo := repository.NewOTPRepository(db)
 
-	userService := service.NewUserService(userRepo, cfg.JWTSecret)
+	notificationService := service.NewNotificationService(
+		otpRepo,
+		userRepo,
+		cfg.Email.SMTPHost,
+		cfg.Email.SMTPUser,
+		cfg.Email.SMTPPass,
+		cfg.Email.SenderEmail,
+		cfg.Email.SMTPPort,
+	)
 
-	userHandler := handle.NewUserHandler(userService)
+	userService := service.NewUserService(userRepo, otpRepo, notificationService, cfg.JWTSecret)
+	userHandler := handle.NewUserHandler(userService, notificationService)
 
 	urlRepo := repository.NewURLRepository(db, rdb)
-
 	urlService := service.NewUrlService(urlRepo)
 	urlHandler := handle.NewURLHandler(urlService)
 
-	authRoutes := r.Group("/auth")
+	authRoutes := r.Group("/api/v1/auth")
 	{
 		authRoutes.POST("/register", userHandler.Register)
 		authRoutes.POST("/login", userHandler.Login)
+		authRoutes.POST("/verify-code", userHandler.VerifyCode)
 	}
 
 	urlRoutes := r.Group("/api/v1")
@@ -39,12 +71,12 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	}
 
 	privateRoutes := r.Group("/api/v1/links")
-	privateRoutes.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	privateRoutes.Use(RequiredAuthMiddleware())
 	{
 		privateRoutes.GET("/", urlHandler.GetMyLinks)
 		privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
 	}
-	r.GET("/:code", urlHandler.Resolve)
 
+	r.GET("/:code", urlHandler.Resolve)
 	return r
 }

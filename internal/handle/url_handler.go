@@ -15,6 +15,11 @@ type NewURLRequest struct {
 	URL string `json:"url"`
 }
 
+type UpdateURLRequest struct {
+	CustomCode *string `json:"custom_code"`
+	LongURL    *string `json:"long_url"`
+}
+
 func NewURLHandler(service service.UrlService) *URLHandleImpl {
 	return &URLHandleImpl{urlService: service}
 }
@@ -31,8 +36,9 @@ func (handler *URLHandleImpl) Shorten(ctx *gin.Context) {
 	useridval, exists := ctx.Get("user_id")
 
 	if exists {
-		uid := useridval.(uint)
-		userID = &uid
+		if uidPtr, ok := useridval.(*uint); ok {
+			userID = uidPtr
+		}
 	}
 	url, err := handler.urlService.Shorten(req.URL, userID)
 	if err != nil {
@@ -40,7 +46,7 @@ func (handler *URLHandleImpl) Shorten(ctx *gin.Context) {
 		return
 	}
 	host := strings.TrimPrefix(ctx.Request.Host, "www.")
-	ctx.JSON(http.StatusOK, gin.H{"url": host + "/" + url.ShortCode})
+	ctx.JSON(http.StatusOK, gin.H{"url": host + "/" + url.ShortCode, "longURL": req.URL})
 }
 
 func (handler *URLHandleImpl) Resolve(ctx *gin.Context) {
@@ -54,9 +60,13 @@ func (handler *URLHandleImpl) Resolve(ctx *gin.Context) {
 }
 
 func (handler *URLHandleImpl) GetMyLinks(ctx *gin.Context) {
-	useridValue, _ := ctx.Get("userID")
-	userID := useridValue.(uint)
+	useridValue, _ := ctx.Get("user_id")
+	userIDPtr, ok := useridValue.(*uint)
 
+	if !ok || userIDPtr == nil {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Must be logged in"})
+	}
+	userID := *userIDPtr
 	links, err := handler.urlService.FindByUserID(userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -64,9 +74,40 @@ func (handler *URLHandleImpl) GetMyLinks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"links": links})
 }
 
+//func (handler *URLHandleImpl) UpdateLink(ctx *gin.Context) {
+//	userIDValue, _ := ctx.Get("user_id")
+//	userIDPtr, ok := userIDValue.(*uint)
+//	if !ok || userIDPtr == nil {
+//		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Must be logged in"})
+//	}
+//	userID := *userIDPtr
+//
+//	oldCode := ctx.Param("code")
+//
+//	var req UpdateURLRequest
+//	if err := ctx.ShouldBindJSON(&req); err != nil {
+//		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+//		return
+//	}
+//	if req.LongURL != nil || req.CustomCode != nil {
+//		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Long URL or Custom Code is required"})
+//		return
+//	}
+//	updatedLink, err := handler.urlService.UpdateLink(
+//		oldCode,
+//		req.LongURL,
+//		req.CustomCode,
+//		userID,
+//	)
+//	if err != nil {
+//		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+//	}
+//	ctx.JSON(http.StatusOK, gin.H{"updatedLink": updatedLink})
+//}
+
 func (handler *URLHandleImpl) DeleteLink(ctx *gin.Context) {
 
-	useridValue, _ := ctx.Get("userID")
+	useridValue, _ := ctx.Get("user_id")
 	userID := useridValue.(uint)
 
 	shortCode := ctx.Param("code")

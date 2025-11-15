@@ -14,15 +14,17 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is empty"})
+			var nilUid *uint = nil
+			c.Set("user_id", nilUid)
+			c.Next()
 			return
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == "" {
+		if tokenString == authHeader {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Bearer token not found"})
 			return
 		}
-		token, err := jwt.Parse(authHeader, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -38,7 +40,8 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
 				return
 			}
-			c.Set("user_id", int(userIDFloat))
+			uid := uint(userIDFloat)
+			c.Set("user_id", &uid)
 			c.Next()
 		} else {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})

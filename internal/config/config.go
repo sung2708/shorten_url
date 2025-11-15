@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -14,6 +15,16 @@ type Config struct {
 	RedisHost   string
 	RedisUser   string
 	RedisPass   string
+	Email       EmailConfig
+}
+
+type EmailConfig struct {
+	SenderEmail   string
+	SMTPHost      string
+	SMTPUser      string
+	SMTPPass      string
+	SMTPPort      int
+	BaseVerifyURL string
 }
 
 func NewConfig(key string, fallback string) string {
@@ -28,6 +39,14 @@ func NewConfig(key string, fallback string) string {
 	return ""
 }
 
+func getEnvAsInt(name string, defaultVal int) int {
+	valueStr := os.Getenv(name)
+	if value, err := strconv.Atoi(valueStr); err == nil {
+		return value
+	}
+	return defaultVal
+}
+
 func NewConfigFromEnv() *Config {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -40,5 +59,14 @@ func NewConfigFromEnv() *Config {
 		RedisHost:   NewConfig("REDIS_HOST", "localhost"),
 		RedisUser:   NewConfig("REDIS_USER", ""),
 		RedisPass:   NewConfig("REDIS_PASSWORD", ""),
+
+		Email: EmailConfig{
+			SenderEmail:   NewConfig("SENDER_EMAIL", "default@example.com"),
+			SMTPHost:      NewConfig("SMTP_HOST", "localhost"),
+			SMTPUser:      NewConfig("SMTP_USER", ""),
+			SMTPPass:      NewConfig("SMTP_PASS", ""),
+			SMTPPort:      getEnvAsInt("SMTP_PORT", 25),
+			BaseVerifyURL: NewConfig("BASE_VERIFY_URL", ""),
+		},
 	}
 }
