@@ -59,25 +59,26 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	urlHandler := handle.NewURLHandler(urlService)
 
 	// API routes - must be registered before catch-all route
-apiGroup := r.Group("/")
-    {
-        // Auth routes
-        authRoutes := apiGroup.Group("/api/v1/auth")
-        {
-            authRoutes.POST("/register", userHandler.Register)
-            authRoutes.POST("/login", userHandler.Login)
-            authRoutes.POST("/verify-code", userHandler.VerifyCode)
-        }
+	apiGroup := r.Group("/")
+	{
+		// Auth routes
+		authRoutes := apiGroup.Group("/api/v1/auth")
+		{
+			authRoutes.POST("/register", userHandler.Register)
+			authRoutes.POST("/login", userHandler.Login)
+			authRoutes.POST("/verify-code", userHandler.VerifyCode)
+		}
 
-        // URL routes
-        apiGroup.POST("/api/v1/shorten", urlHandler.Shorten) /
-        privateRoutes := apiGroup.Group("/api/v1/links")
-        privateRoutes.Use(RequiredAuthMiddleware())
-        {
-            privateRoutes.GET("/", urlHandler.GetMyLinks)
-            privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
-        }
-    }
+		// URL routes
+		apiGroup.POST("/api/v1/shorten", urlHandler.Shorten) /
+			privateRoutes := apiGroup.Group("/api/v1/links")
+		privateRoutes.Use(RequiredAuthMiddleware())
+		{
+			privateRoutes.GET("/", urlHandler.GetMyLinks)
+			privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
+		}
+	}
 
-    r.GET("/:code", urlHandler.Resolve)
-    return r
+	r.GET("/:code", urlHandler.Resolve)
+	return r
+}
