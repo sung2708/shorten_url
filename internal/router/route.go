@@ -58,6 +58,21 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	urlService := service.NewUrlService(urlRepo)
 	urlHandler := handle.NewURLHandler(urlService)
 
+	// Health check endpoint (for debugging deployment)
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+			"routes": []string{
+				"POST /api/v1/auth/register",
+				"POST /api/v1/auth/login",
+				"POST /api/v1/auth/verify-code",
+				"POST /api/v1/shorten",
+				"GET /api/v1/links",
+				"DELETE /api/v1/links/:code",
+			},
+		})
+	})
+
 	// --- ĐĂNG KÝ CÁC ROUTE API TRỰC TIẾP TRÊN ROUTER GỐC (r) ---
 
 	// Auth routes
@@ -66,7 +81,7 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	r.POST("/api/v1/auth/verify-code", userHandler.VerifyCode)
 
 	// URL routes
-	r.POST("/api/v1/shorten", urlHandler.Shorten) // Route BỊ LỖI TRƯỚC ĐÂY
+	r.POST("/api/v1/shorten", urlHandler.Shorten)
 
 	// Private routes (require authentication)
 	// Sử dụng Subrouter cho các route yêu cầu xác thực
