@@ -31,7 +31,7 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://ui.tinyr.site", "http://localhost:5173"},
+		AllowOrigins:     []string{"https://ui.tinyr.site", "http://localhost:5173", "https://tinyr.site"}, // Đã thêm tinyr.site
 		AllowMethods:     []string{"POST", "GET", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -58,27 +58,28 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	urlService := service.NewUrlService(urlRepo)
 	urlHandler := handle.NewURLHandler(urlService)
 
-	// API routes - must be registered before catch-all route
-	apiGroup := r.Group("/")
-	{
-		// Auth routes
-		authRoutes := apiGroup.Group("/api/v1/auth")
-		{
-			authRoutes.POST("/register", userHandler.Register)
-			authRoutes.POST("/login", userHandler.Login)
-			authRoutes.POST("/verify-code", userHandler.VerifyCode)
-		}
+	// --- ĐĂNG KÝ CÁC ROUTE API TRỰC TIẾP TRÊN ROUTER GỐC (r) ---
 
-		// URL routes
-		apiGroup.POST("/api/v1/shorten", urlHandler.Shorten)
-		privateRoutes := apiGroup.Group("/api/v1/links")
-		privateRoutes.Use(RequiredAuthMiddleware())
-		{
-			privateRoutes.GET("/", urlHandler.GetMyLinks)
-			privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
-		}
+	// Auth routes
+	r.POST("/api/v1/auth/register", userHandler.Register)
+	r.POST("/api/v1/auth/login", userHandler.Login)
+	r.POST("/api/v1/auth/verify-code", userHandler.VerifyCode)
+
+	// URL routes
+	r.POST("/api/v1/shorten", urlHandler.Shorten) // Route BỊ LỖI TRƯỚC ĐÂY
+
+	// Private routes (require authentication)
+	// Sử dụng Subrouter cho các route yêu cầu xác thực
+	privateRoutes := r.Group("/api/v1/links")
+	privateRoutes.Use(RequiredAuthMiddleware())
+	{
+		privateRoutes.GET("/", urlHandler.GetMyLinks)
+		privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
 	}
 
+	// API routes (Các route cũ đã xóa)
+
+	// Catch-all route for short code resolution (must be last)
 	r.GET("/:code", urlHandler.Resolve)
 	return r
 }
