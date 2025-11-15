@@ -31,7 +31,7 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://ui.tinyr.site"},
+		AllowOrigins:     []string{"https://ui.tinyr.site", "http://localhost:5173"},
 		AllowMethods:     []string{"POST", "GET", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -58,25 +58,30 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	urlService := service.NewUrlService(urlRepo)
 	urlHandler := handle.NewURLHandler(urlService)
 
-	authRoutes := r.Group("/api/v1/auth")
+	// API routes - must be registered before catch-all route
+	apiV1 := r.Group("/api/v1")
 	{
-		authRoutes.POST("/register", userHandler.Register)
-		authRoutes.POST("/login", userHandler.Login)
-		authRoutes.POST("/verify-code", userHandler.VerifyCode)
+		// Auth routes
+		authRoutes := apiV1.Group("/auth")
+		{
+			authRoutes.POST("/register", userHandler.Register)
+			authRoutes.POST("/login", userHandler.Login)
+			authRoutes.POST("/verify-code", userHandler.VerifyCode)
+		}
+
+		// URL routes
+		apiV1.POST("/shorten", urlHandler.Shorten)
+
+		// Private routes (require authentication)
+		privateRoutes := apiV1.Group("/links")
+		privateRoutes.Use(RequiredAuthMiddleware())
+		{
+			privateRoutes.GET("/", urlHandler.GetMyLinks)
+			privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
+		}
 	}
 
-	urlRoutes := r.Group("/api/v1")
-	{
-		urlRoutes.POST("/shorten", urlHandler.Shorten)
-	}
-
-	privateRoutes := r.Group("/api/v1/links")
-	privateRoutes.Use(RequiredAuthMiddleware())
-	{
-		privateRoutes.GET("/", urlHandler.GetMyLinks)
-		privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
-	}
-
+	// Catch-all route for short code resolution (must be last)
 	r.GET("/:code", urlHandler.Resolve)
 	return r
 }
