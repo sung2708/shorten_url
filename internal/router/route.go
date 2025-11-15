@@ -58,41 +58,29 @@ func Setup(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	urlService := service.NewUrlService(urlRepo)
 	urlHandler := handle.NewURLHandler(urlService)
 
-	// Health check endpoint (for debugging deployment)
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"routes": []string{
-				"POST /api/v1/auth/register",
-				"POST /api/v1/auth/login",
-				"POST /api/v1/auth/verify-code",
-				"POST /api/v1/shorten",
-				"GET /api/v1/links",
-				"DELETE /api/v1/links/:code",
-			},
-		})
-	})
-
-	// --- ĐĂNG KÝ CÁC ROUTE API TRỰC TIẾP TRÊN ROUTER GỐC (r) ---
-
-	// Auth routes
-	r.POST("/api/v1/auth/register", userHandler.Register)
-	r.POST("/api/v1/auth/login", userHandler.Login)
-	r.POST("/api/v1/auth/verify-code", userHandler.VerifyCode)
-
-	// URL routes
-	r.POST("/api/v1/shorten", urlHandler.Shorten)
-
-	// Private routes (require authentication)
-	// Sử dụng Subrouter cho các route yêu cầu xác thực
-	privateRoutes := r.Group("/api/v1/links")
-	privateRoutes.Use(RequiredAuthMiddleware())
+	// --- SỬ DỤNG MỘT NHÓM ROUTE CHUẨN XÁC CHO TOÀN BỘ API ---
+	// Endpoint đầy đủ là: /api/v1/...
+	apiV1 := r.Group("/api/v1")
 	{
-		privateRoutes.GET("/", urlHandler.GetMyLinks)
-		privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
-	}
+		// Auth routes (sẽ là /api/v1/auth/...)
+		authRoutes := apiV1.Group("/auth")
+		{
+			authRoutes.POST("/register", userHandler.Register)
+			authRoutes.POST("/login", userHandler.Login)
+			authRoutes.POST("/verify-code", userHandler.VerifyCode)
+		}
 
-	// API routes (Các route cũ đã xóa)
+		// URL routes (sẽ là /api/v1/shorten)
+		apiV1.POST("/shorten", urlHandler.Shorten)
+
+		// Private routes (sẽ là /api/v1/links/...)
+		privateRoutes := apiV1.Group("/links")
+		privateRoutes.Use(RequiredAuthMiddleware())
+		{
+			privateRoutes.GET("/", urlHandler.GetMyLinks)
+			privateRoutes.DELETE("/:code", urlHandler.DeleteLink)
+		}
+	}
 
 	// Catch-all route for short code resolution (must be last)
 	r.GET("/:code", urlHandler.Resolve)
