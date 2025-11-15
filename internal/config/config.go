@@ -27,16 +27,25 @@ type EmailConfig struct {
 	BaseVerifyURL string
 }
 
+// NewConfig gets environment variable with fallback, fatal if required and missing
 func NewConfig(key string, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
 	if fallback != "" {
-		log.Printf("Fallback env variable is %s", fallback)
+		log.Printf("Using fallback for %s: %s", key, fallback)
 		return fallback
 	}
-	log.Fatal("Fallback env variable is required")
+	log.Fatalf("Required environment variable %s is missing", key)
 	return ""
+}
+
+// GetConfigOptional gets environment variable with fallback, returns empty string if missing
+func GetConfigOptional(key string, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }
 
 func getEnvAsInt(name string, defaultVal int) int {
@@ -53,20 +62,25 @@ func NewConfigFromEnv() *Config {
 		log.Println("Error loading .env file")
 	}
 	return &Config{
+		// Required variables
 		PostgresDSN: NewConfig("POSTGRES_DB", ""),
 		PORT:        NewConfig("PORT", "8080"),
 		JWTSecret:   NewConfig("JWT_SECRET", ""),
-		RedisHost:   NewConfig("REDIS_HOST", "localhost"),
-		RedisUser:   NewConfig("REDIS_USER", ""),
-		RedisPass:   NewConfig("REDIS_PASSWORD", ""),
+
+		// Redis - optional credentials (can be empty for local Redis)
+		RedisHost: GetConfigOptional("REDIS_HOST", "localhost:6379"),
+		RedisUser: GetConfigOptional("REDIS_USER", ""),
+		RedisPass: GetConfigOptional("REDIS_PASSWORD", ""),
 
 		Email: EmailConfig{
-			SenderEmail:   NewConfig("SENDER_EMAIL", "default@example.com"),
-			SMTPHost:      NewConfig("SMTP_HOST", "localhost"),
+			// SMTP - required for email functionality
+			SenderEmail:   NewConfig("SENDER_EMAIL", ""),
+			SMTPHost:      NewConfig("SMTP_HOST", ""),
 			SMTPUser:      NewConfig("SMTP_USER", ""),
 			SMTPPass:      NewConfig("SMTP_PASS", ""),
-			SMTPPort:      getEnvAsInt("SMTP_PORT", 25),
-			BaseVerifyURL: NewConfig("BASE_VERIFY_URL", ""),
+			SMTPPort:      getEnvAsInt("SMTP_PORT", 587),
+			// BaseVerifyURL is optional (not used in OTP flow)
+			BaseVerifyURL: GetConfigOptional("BASE_VERIFY_URL", ""),
 		},
 	}
 }
