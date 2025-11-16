@@ -14,6 +14,7 @@ Dự án áp dụng Service-Oriented Architecture kết hợp kiến trúc nhi�
 | Caching         | Redis            |
 | Auth            | JWT              |
 | Email Service   | Gomail + SMTP    |
+| **[Frontend UI](https://github.com/sung2708/shorten_url_ui/tree/main/src)**| React, Vite, Tailwind CSS |
 
 ## Kiến trúc thư mục
 ```
